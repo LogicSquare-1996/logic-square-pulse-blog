@@ -235,14 +235,14 @@ const CreateBlog = () => {
                   </div>
                   <div className="p-2">
                     <div className="bg-gray-800 text-gray-100 p-2 rounded font-mono text-sm">
-                      const x = 'code block';
+                      const x = &apos;code block&apos;;
                     </div>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                    <code className="text-sm">> Blockquote text</code>
+                    <code className="text-sm">&gt; Blockquote text</code>
                   </div>
                   <div className="p-2">
                     <blockquote className="pl-4 border-l-4 border-gray-300 italic">
