@@ -1,304 +1,103 @@
-
-import { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Heart, 
-  MessageSquare, 
-  Bookmark,
-  Clock,
-  User
-} from "lucide-react";
-import { toast } from "sonner";
-import * as blogApi from "@/api/blog";
+import { Heart, MessageSquare, Bookmark, Calendar, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface BlogPost {
   id?: string;
   _id?: string;
   title: string;
-  excerpt?: string;
-  content?: string;
-  thumbnailUrl?: string;
+  excerpt: string;
+  content: string;
+  thumbnailUrl: string;
+  createdAt: string;
   author: {
     name: string;
     profilePicture?: string;
+    avatar?: string; // Adding avatar as an alternative to profilePicture
     _id?: string;
+    title?: string; // Adding title field for author
   };
-  createdAt: string;
-  tags?: string[];
-  likes?: number | any[];
-  comments?: number | any[];
-  readTime?: string;
+  likes: number;
+  comments: number;
+  tags: string[];
+  category?: string; // Adding category field
+  rating?: number; // Adding rating field
+  featured?: boolean; // Adding featured field
+  views?: number; // Adding views field for completeness
 }
 
 interface BlogCardProps {
   blog: BlogPost;
-  isAuthenticated?: boolean;
-  variant?: "default" | "horizontal";
+  isAuthenticated: boolean;
+  variant?: "default" | "compact";
 }
 
-const BlogCard = ({ blog, isAuthenticated = false, variant = "default" }: BlogCardProps) => {
-  const [liked, setLiked] = useState(false);
-  const [bookmarked, setBookmarked] = useState(false);
-  const blogId = blog._id || blog.id;
-  
-  const handleLike = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      toast.error("Please login to like blogs");
-      return;
-    }
-    
-    try {
-      await blogApi.likeBlog(blogId as string);
-      setLiked(prev => !prev);
-    } catch (error) {
-      console.error("Error liking blog:", error);
-    }
-  };
-  
-  const handleBookmark = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      toast.error("Please login to bookmark blogs");
-      return;
-    }
-    
-    try {
-      await blogApi.bookmarkBlog(blogId as string);
-      setBookmarked(prev => !prev);
-      toast.success(bookmarked ? "Blog removed from bookmarks" : "Blog added to bookmarks");
-    } catch (error) {
-      console.error("Error bookmarking blog:", error);
-    }
-  };
-  
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    });
-  };
-  
-  const getLikesCount = () => {
-    if (typeof blog.likes === 'number') {
-      return blog.likes;
-    }
-    return blog.likes?.length || 0;
-  };
-  
-  const getCommentsCount = () => {
-    if (typeof blog.comments === 'number') {
-      return blog.comments;
-    }
-    return blog.comments?.length || 0;
-  };
-  
-  if (variant === "horizontal") {
-    return (
-      <Card className="overflow-hidden transition-all hover:shadow-md">
-        <div className="flex flex-col md:flex-row">
-          <div className="md:w-1/3">
-            <Link to={`/blog/${blogId}`}>
-              <div className="h-48 md:h-full bg-gray-200 dark:bg-gray-700 relative overflow-hidden">
-                {blog.thumbnailUrl ? (
-                  <img
-                    src={blog.thumbnailUrl}
-                    alt={blog.title}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                    No Image
-                  </div>
-                )}
-              </div>
-            </Link>
-          </div>
-          
-          <div className="md:w-2/3 p-6">
-            <div className="flex justify-between items-start">
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
-                  <div className="flex items-center">
-                    <User size={14} className="mr-1" />
-                    <span>{blog.author.name}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock size={14} className="mr-1" />
-                    <span>{formatDate(blog.createdAt)}</span>
-                  </div>
-                </div>
-                
-                <Link to={`/blog/${blogId}`}>
-                  <h3 className="text-xl md:text-2xl font-bold leading-tight hover:text-blog-purple transition-colors">
-                    {blog.title}
-                  </h3>
-                </Link>
-                
-                <p className="text-gray-600 dark:text-gray-300 line-clamp-2">
-                  {blog.excerpt}
-                </p>
-                
-                {blog.tags && blog.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {blog.tags.slice(0, 3).map((tag, index) => (
-                      <span 
-                        key={index} 
-                        className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-1 rounded"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {blog.tags.length > 3 && (
-                      <span className="text-gray-500 dark:text-gray-400 text-xs">
-                        +{blog.tags.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="mt-4 flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className={`flex items-center gap-1 ${liked ? "text-red-500" : ""}`}
-                  onClick={handleLike}
-                >
-                  <Heart size={18} className={liked ? "fill-current" : ""} />
-                  <span>{getLikesCount()}</span>
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="flex items-center gap-1"
-                  asChild
-                >
-                  <Link to={`/blog/${blogId}#comments`}>
-                    <MessageSquare size={18} />
-                    <span>{getCommentsCount()}</span>
-                  </Link>
-                </Button>
-              </div>
-              
-              {isAuthenticated && (
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className={bookmarked ? "text-blog-purple" : ""}
-                  onClick={handleBookmark}
-                >
-                  <Bookmark size={18} className={bookmarked ? "fill-current" : ""} />
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-  
+const BlogCard: React.FC<BlogCardProps> = ({ blog, isAuthenticated, variant = "default" }) => {
+  const formattedDate = format(new Date(blog.createdAt), "MMM dd, yyyy");
+
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <Link to={`/blog/${blogId}`}>
-        <div className="h-48 bg-gray-200 dark:bg-gray-700 relative overflow-hidden">
-          {blog.thumbnailUrl ? (
-            <img
-              src={blog.thumbnailUrl}
-              alt={blog.title}
-              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-              No Image
-            </div>
+    <Card className={cn(variant === "compact" ? "h-64" : "")}>
+      <Link to={`/blog/${blog.id || blog._id}`}>
+        <div className="relative">
+          <img
+            src={blog.thumbnailUrl}
+            alt={blog.title}
+            className={cn(
+              "aspect-video w-full rounded-md object-cover transition-all hover:scale-105",
+              variant === "compact" ? "h-32" : "h-48"
+            )}
+          />
+          {blog.category && (
+            <Badge className="absolute top-2 left-2 rounded-full px-3 py-1">
+              {blog.category}
+            </Badge>
           )}
         </div>
       </Link>
-      
-      <CardContent className="p-4">
-        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
-          <div className="flex items-center">
-            <User size={14} className="mr-1" />
-            <span>{blog.author.name}</span>
-          </div>
-          <div className="flex items-center">
-            <Clock size={14} className="mr-1" />
-            <span>{formatDate(blog.createdAt)}</span>
-          </div>
-        </div>
-        
-        <Link to={`/blog/${blogId}`}>
-          <h3 className="mt-2 text-xl font-bold leading-tight hover:text-blog-purple transition-colors line-clamp-2">
-            {blog.title}
-          </h3>
+      <CardContent className="grid gap-3 py-4">
+        <Link to={`/blog/${blog.id || blog._id}`}>
+          <h3 className="text-lg font-semibold line-clamp-2">{blog.title}</h3>
         </Link>
-        
-        <p className="mt-2 text-gray-600 dark:text-gray-300 line-clamp-2">
+        <p className="text-sm text-muted-foreground line-clamp-2">
           {blog.excerpt}
         </p>
-        
-        {blog.tags && blog.tags.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {blog.tags.slice(0, 3).map((tag, index) => (
-              <span 
-                key={index} 
-                className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-1 rounded"
-              >
-                {tag}
-              </span>
-            ))}
-            {blog.tags.length > 3 && (
-              <span className="text-gray-500 dark:text-gray-400 text-xs">
-                +{blog.tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
       </CardContent>
-      
-      <CardFooter className="p-4 pt-0 flex justify-between items-center border-t">
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className={`flex items-center gap-1 ${liked ? "text-red-500" : ""}`}
-            onClick={handleLike}
-          >
-            <Heart size={18} className={liked ? "fill-current" : ""} />
-            <span>{getLikesCount()}</span>
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="flex items-center gap-1"
-            asChild
-          >
-            <Link to={`/blog/${blogId}#comments`}>
-              <MessageSquare size={18} />
-              <span>{getCommentsCount()}</span>
+      <CardFooter className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <Link to={`/user/${blog.author._id}`}>
+            <img
+              src={blog.author.avatar || blog.author.profilePicture || "https://via.placeholder.com/50"}
+              alt={blog.author.name}
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          </Link>
+          <div>
+            <Link to={`/user/${blog.author._id}`}>
+              <p className="text-sm font-medium hover:underline">{blog.author.name}</p>
             </Link>
-          </Button>
+            <p className="text-xs text-muted-foreground">{formattedDate}</p>
+          </div>
         </div>
-        
-        {isAuthenticated && (
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className={bookmarked ? "text-blog-purple" : ""}
-            onClick={handleBookmark}
-          >
-            <Bookmark size={18} className={bookmarked ? "fill-current" : ""} />
+        <div className="flex space-x-2">
+          <Button variant="ghost" size="icon">
+            <Heart className="h-4 w-4" />
+            <span>{blog.likes}</span>
           </Button>
-        )}
+          <Button variant="ghost" size="icon">
+            <MessageSquare className="h-4 w-4" />
+            <span>{blog.comments}</span>
+          </Button>
+          {isAuthenticated && (
+            <Button variant="ghost" size="icon">
+              <Bookmark className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

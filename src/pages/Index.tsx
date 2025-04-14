@@ -40,7 +40,7 @@ const Index = () => {
     // Apply filter
     switch (activeFilter) {
       case "popular":
-        filtered = [...filtered].sort((a, b) => b.likes - a.likes);
+        filtered = [...filtered].sort((a, b) => (b.likes || 0) - (a.likes || 0));
         break;
       case "recent":
         filtered = [...filtered].sort((a, b) => {
@@ -51,7 +51,7 @@ const Index = () => {
         });
         break;
       case "trending":
-        filtered = [...filtered].sort((a, b) => b.comments - a.comments);
+        filtered = [...filtered].sort((a, b) => (b.comments || 0) - (a.comments || 0));
         break;
       default:
         break;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -384,9 +383,13 @@ const BlogView = () => {
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    code({node, inline, className, children, ...props}) {
+                    code({node, className, children, ...props}) {
                       const match = /language-(\w+)/.exec(className || '');
-                      return !inline && match ? (
+                      return !match ? (
+                        <code {...props} className={className}>
+                          {children}
+                        </code>
+                      ) : (
                         <SyntaxHighlighter
                           {...props}
                           style={vscDarkPlus}
@@ -395,10 +398,6 @@ const BlogView = () => {
                         >
                           {String(children).replace(/\n$/, '')}
                         </SyntaxHighlighter>
-                      ) : (
-                        <code {...props} className={className}>
-                          {children}
-                        </code>
                       );
                     }
                   }}

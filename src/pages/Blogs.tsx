@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +57,6 @@ const Blogs = () => {
     fetchBlogs();
   }, [pagination.page, activeFilter, selectedTags, selectedCategories]);
 
-  // Debounce search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchBlogs();
@@ -70,7 +68,6 @@ const Blogs = () => {
   const fetchBlogs = async () => {
     setLoading(true);
     try {
-      // Try to fetch from API first
       const token = localStorage.getItem('token');
       if (token) {
         try {
@@ -97,10 +94,8 @@ const Blogs = () => {
         }
       }
       
-      // Fall back to filtering mock data
       let filtered = [...mockBlogs];
       
-      // Apply search filter
       if (searchTerm) {
         filtered = filtered.filter(blog => 
           blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,24 +105,21 @@ const Blogs = () => {
         );
       }
       
-      // Apply tag filter
       if (selectedTags.length > 0) {
         filtered = filtered.filter(blog => 
           selectedTags.some(tag => blog.tags.includes(tag))
         );
       }
       
-      // Apply category filter (mock data doesn't have categories, but would work with actual data)
       if (selectedCategories.length > 0) {
         filtered = filtered.filter(blog => 
           blog.category && selectedCategories.includes(blog.category)
         );
       }
       
-      // Apply sort
       switch (activeFilter) {
         case "popular":
-          filtered = [...filtered].sort((a, b) => b.likes - a.likes);
+          filtered = [...filtered].sort((a, b) => (b.likes || 0) - (a.likes || 0));
           break;
         case "recent":
           filtered = [...filtered].sort((a, b) => {
@@ -137,10 +129,10 @@ const Blogs = () => {
           });
           break;
         case "trending":
-          filtered = [...filtered].sort((a, b) => b.comments - a.comments);
+          filtered = [...filtered].sort((a, b) => (b.comments || 0) - (a.comments || 0));
           break;
         case "rated":
-          filtered = [...filtered].sort((a, b) => b.rating - a.rating);
+          filtered = [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0));
           break;
         default:
           filtered = [...filtered].sort((a, b) => {
@@ -150,7 +142,6 @@ const Blogs = () => {
           });
       }
       
-      // Apply pagination
       const start = (pagination.page - 1) * pagination.limit;
       const end = start + pagination.limit;
       const paginatedBlogs = filtered.slice(start, end);
@@ -280,7 +271,6 @@ const Blogs = () => {
               </DialogHeader>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-                {/* Tags */}
                 <div>
                   <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
                     <Tag size={18} /> Tags
@@ -304,7 +294,6 @@ const Blogs = () => {
                   </div>
                 </div>
                 
-                {/* Categories */}
                 <div>
                   <h3 className="text-lg font-medium mb-4">Categories</h3>
                   <div className="flex flex-wrap gap-3">
@@ -364,7 +353,6 @@ const Blogs = () => {
             <>
               <BlogGrid blogs={blogs} isAuthenticated={isAuthenticated} />
               
-              {/* Pagination */}
               {pagination.pages > 1 && (
                 <div className="flex justify-center mt-8">
                   <div className="flex gap-2">
@@ -377,7 +365,6 @@ const Blogs = () => {
                     </Button>
                     
                     {pagination.pages <= 5 ? (
-                      // Show all page numbers if 5 or less
                       [...Array(pagination.pages)].map((_, i) => (
                         <Button 
                           key={i}
@@ -389,7 +376,6 @@ const Blogs = () => {
                         </Button>
                       ))
                     ) : (
-                      // Show limited page numbers with ellipsis for larger sets
                       <>
                         <Button 
                           variant={pagination.page === 1 ? "default" : "outline"}
@@ -452,16 +438,10 @@ const Blogs = () => {
         </TabsContent>
         
         <TabsContent value="featured">
-          <div className="text-center py-16">
-            <h3 className="text-xl font-medium mb-2">Featured blogs</h3>
-            <p className="text-gray-500 dark:text-gray-400">
-              Our editors have curated the best content for you
-            </p>
-            <BlogGrid 
-              blogs={blogs.filter(blog => blog.featured)} 
-              isAuthenticated={isAuthenticated} 
-            />
-          </div>
+          <BlogGrid 
+            blogs={blogs.filter(blog => blog.featured === true)} 
+            isAuthenticated={isAuthenticated} 
+          />
         </TabsContent>
         
         <TabsContent value="latest">

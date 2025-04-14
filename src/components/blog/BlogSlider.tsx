@@ -132,7 +132,7 @@ const BlogSlider = ({ blogs, isAuthenticated }: BlogSliderProps) => {
                       <Clock size={14} className="mr-1" />
                       {formatDate(blogs[currentIndex].createdAt)}
                       <span className="mx-2">•</span>
-                      {blogs[currentIndex].category}
+                      {blogs[currentIndex].category || "Uncategorized"}
                     </p>
                   </motion.div>
                   
@@ -161,7 +161,7 @@ const BlogSlider = ({ blogs, isAuthenticated }: BlogSliderProps) => {
                     transition={{ delay: 0.5, duration: 0.5 }}
                   >
                     <img
-                      src={blogs[currentIndex].author.avatar}
+                      src={blogs[currentIndex].author.profilePicture || blogs[currentIndex].author.avatar || "https://via.placeholder.com/40"}
                       alt={blogs[currentIndex].author.name}
                       className="h-10 w-10 rounded-full object-cover mr-3"
                     />
@@ -170,7 +170,7 @@ const BlogSlider = ({ blogs, isAuthenticated }: BlogSliderProps) => {
                         {blogs[currentIndex].author.name}
                       </span>
                       <span className="text-white/80 text-sm">
-                        {blogs[currentIndex].author.title}
+                        {blogs[currentIndex].author.title || "Author"}
                       </span>
                     </div>
                     <div className="flex ml-auto gap-4">
