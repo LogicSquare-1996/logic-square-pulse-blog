@@ -1,202 +1,227 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { BlogPost } from "./BlogCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { BlogPost } from "./BlogCard";
 
 interface BlogSliderProps {
   blogs: BlogPost[];
-  isAuthenticated?: boolean;
+  isAuthenticated: boolean;
 }
 
-const BlogSlider = ({ blogs, isAuthenticated = false }: BlogSliderProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
-
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? "100%" : "-100%",
-      opacity: 0,
-      scale: 0.9,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        x: { type: "spring", stiffness: 300, damping: 30 },
-        opacity: { duration: 0.4 },
-        scale: { duration: 0.4 },
-      },
-    },
-    exit: (direction: number) => ({
-      x: direction > 0 ? "-100%" : "100%",
-      opacity: 0,
-      scale: 0.9,
-      transition: {
-        x: { type: "spring", stiffness: 300, damping: 30 },
-        opacity: { duration: 0.4 },
-        scale: { duration: 0.4 },
-      },
-    }),
+const BlogSlider = ({ blogs, isAuthenticated }: BlogSliderProps) => {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const slideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleNextSlide = () => {
+    setActiveSlide((prev) => (prev === blogs.length - 1 ? 0 : prev + 1));
   };
 
-  const handlePrev = () => {
-    setDirection(-1);
-    setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? blogs.length - 1 : prevIndex - 1
-    );
-  };
-
-  const handleNext = () => {
-    setDirection(1);
-    setCurrentIndex((prevIndex) =>
-      prevIndex === blogs.length - 1 ? 0 : prevIndex + 1
-    );
-  };
-
-  const stopAutoPlay = () => {
-    if (autoPlayRef.current) {
-      clearInterval(autoPlayRef.current);
-      autoPlayRef.current = null;
-    }
-  };
-
-  const startAutoPlay = () => {
-    stopAutoPlay();
-    autoPlayRef.current = setInterval(() => {
-      handleNext();
-    }, 5000);
+  const handlePreviousSlide = () => {
+    setActiveSlide((prev) => (prev === 0 ? blogs.length - 1 : prev - 1));
   };
 
   useEffect(() => {
-    startAutoPlay();
-    return () => stopAutoPlay();
-  }, [currentIndex]);
+    // Autoplay functionality
+    if (!isPaused) {
+      slideTimerRef.current = setInterval(() => {
+        handleNextSlide();
+      }, 5000);
+    }
 
-  if (!blogs || !blogs.length) return null;
+    return () => {
+      if (slideTimerRef.current) {
+        clearInterval(slideTimerRef.current);
+      }
+    };
+  }, [isPaused, activeSlide, blogs.length]);
 
-  const currentBlog = blogs[currentIndex];
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const pauseSlider = () => {
+    setIsPaused(true);
+  };
+
+  const resumeSlider = () => {
+    setIsPaused(false);
+  };
+
+  if (!blogs || blogs.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="relative w-full h-[500px] md:h-[600px] overflow-hidden group">
-      {/* Navigation Buttons */}
-      <button
-        onClick={() => {
-          handlePrev();
-          stopAutoPlay();
-        }}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 dark:bg-black/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/40 dark:hover:bg-black/40 transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Previous"
-      >
-        <ChevronLeft className="h-6 w-6 text-white" />
-      </button>
-      
-      <button
-        onClick={() => {
-          handleNext();
-          stopAutoPlay();
-        }}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 dark:bg-black/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/40 dark:hover:bg-black/40 transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Next"
-      >
-        <ChevronRight className="h-6 w-6 text-white" />
-      </button>
+    <div 
+      className="relative w-full h-[500px] overflow-hidden bg-gradient-to-r from-gray-900 to-gray-800"
+      onMouseEnter={pauseSlider}
+      onMouseLeave={resumeSlider}
+    >
+      {/* Background Image Layer */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`bg-${activeSlide}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1, ease: "easeInOut" }}
+          className="absolute inset-0 z-0"
+        >
+          <div 
+            className="w-full h-full"
+            style={{
+              backgroundImage: `url(${blogs[activeSlide].thumbnailUrl || '/placeholder.svg'})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              filter: "blur(15px)",
+            }}
+          />
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Slides */}
-      <div className="h-full w-full">
-        <AnimatePresence initial={false} custom={direction} mode="wait">
-          <motion.div
-            key={currentIndex}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            className="absolute inset-0"
-          >
-            {/* Image with gradient overlay */}
-            <div className="relative h-full">
-              <img
-                src={currentBlog.thumbnailUrl}
-                alt={currentBlog.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-            </div>
-            
-            {/* Content */}
-            <div className="absolute inset-0 flex items-end">
-              <div className="container mx-auto px-4 pb-12 md:pb-16">
-                <motion.div 
-                  className="max-w-4xl"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
+
+      <div className="container mx-auto h-full relative z-20 flex items-center">
+        <div className="w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSlide}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
+            >
+              {/* Left Content (Text) */}
+              <div className="text-white p-4">
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {blogs[activeSlide].tags?.slice(0, 3).map((tag, index) => (
+                    <span
+                      key={index}
+                      className="bg-blog-purple/20 text-blog-purple-light px-2 py-1 text-xs rounded"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <motion.h1 
+                  className="text-3xl md:text-5xl font-bold mb-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 rounded-full overflow-hidden mr-3">
-                      <img 
-                        src={currentBlog.author.avatarUrl} 
-                        alt={currentBlog.author.name} 
-                        className="w-full h-full object-cover"
+                  {blogs[activeSlide].title}
+                </motion.h1>
+                
+                <motion.p 
+                  className="text-gray-300 mb-6 max-w-lg"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  {blogs[activeSlide].excerpt}
+                </motion.p>
+
+                <motion.div 
+                  className="flex items-center space-x-4 mb-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                >
+                  <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-400">
+                    {blogs[activeSlide].author.profilePicture ? (
+                      <img
+                        src={blogs[activeSlide].author.profilePicture}
+                        alt={blogs[activeSlide].author.name}
+                        className="h-full w-full object-cover"
                       />
-                    </div>
-                    <span className="text-sm font-medium text-white">{currentBlog.author.name}</span>
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-gray-800">
+                        {blogs[activeSlide].author.name.charAt(0)}
+                      </div>
+                    )}
                   </div>
-                  
-                  <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight text-white">
-                    {currentBlog.title}
-                  </h2>
-                  
-                  <p className="text-sm md:text-base text-gray-200 mb-6 max-w-2xl">
-                    {currentBlog.excerpt}
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {currentBlog.tags.map((tag) => (
-                      <span 
-                        key={tag} 
-                        className="bg-blog-purple/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  <div>
+                    <p className="font-medium">{blogs[activeSlide].author.name}</p>
+                    <p className="text-sm text-gray-400">{formatDate(blogs[activeSlide].createdAt)}</p>
                   </div>
-                  
-                  <Link to={isAuthenticated ? `/blog/${currentBlog.id || currentBlog._id}` : "/login"}>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
+                >
+                  <Link to={`/blog/${blogs[activeSlide]._id || blogs[activeSlide].id}`}>
                     <Button className="bg-blog-purple hover:bg-blog-purple-dark text-white">
-                      {isAuthenticated ? "Read More" : "Sign in to Read"}
+                      Read Post
                     </Button>
                   </Link>
                 </motion.div>
               </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
+              
+              {/* Right Content (Image) */}
+              <div className="hidden md:block">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
+                  className="relative rounded-lg shadow-2xl overflow-hidden h-[350px]"
+                >
+                  <img
+                    src={blogs[activeSlide].thumbnailUrl || '/placeholder.svg'}
+                    alt={blogs[activeSlide].title}
+                    className="w-full h-full object-cover"
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
-      {/* Pagination Indicator */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
-        {blogs.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => {
-              setDirection(index > currentIndex ? 1 : -1);
-              setCurrentIndex(index);
-              stopAutoPlay();
-            }}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              index === currentIndex 
-                ? "bg-white scale-125" 
-                : "bg-white/40 hover:bg-white/60"
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
+          {/* Slider Navigation Buttons */}
+          <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 md:justify-start md:left-8 z-30">
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="bg-white/10 backdrop-blur-sm border-white/20 text-white rounded-full hover:bg-white/20"
+              onClick={handlePreviousSlide}
+            >
+              <ChevronLeft />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="bg-white/10 backdrop-blur-sm border-white/20 text-white rounded-full hover:bg-white/20"
+              onClick={handleNextSlide}
+            >
+              <ChevronRight />
+            </Button>
+          </div>
+
+          {/* Indicator Dots */}
+          <div className="absolute bottom-8 right-8 hidden md:flex space-x-2">
+            {blogs.map((_, index) => (
+              <button
+                key={index}
+                className={`h-2 rounded-full transition-all ${
+                  index === activeSlide ? "w-8 bg-blog-purple" : "w-2 bg-white/30"
+                }`}
+                onClick={() => setActiveSlide(index)}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

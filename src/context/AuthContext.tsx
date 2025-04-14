@@ -8,6 +8,7 @@ interface User {
   name: string;
   email: string;
   profilePicture: string;
+  bio?: string;
   role: string;
 }
 
