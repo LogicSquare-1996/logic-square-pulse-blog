@@ -5,9 +5,10 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "./AdminLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, BarChart, Bars, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Users, BookOpen, MessageSquare, TrendingUp, Award, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import axios from "axios";
 
 const mockStats = {
   totalUsers: 42,
@@ -55,7 +56,6 @@ const AdminDashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(mockStats);
-  const [timeRange, setTimeRange] = useState("weekly");
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -76,19 +76,31 @@ const AdminDashboard = () => {
   const fetchDashboardStats = async () => {
     setLoading(true);
     try {
-      // In a real application, this would be an API call
-      // const response = await fetch('/api/admin/dashboard/stats');
-      // const data = await response.json();
-      // setStats(data);
-      
-      // Using mock data for now
-      setTimeout(() => {
+      // Get real dashboard stats from the API
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await axios.get('/admin/dashboard/stats', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (response.data && response.data.success) {
+          setStats(response.data);
+        } else {
+          // Fallback to mock data
+          setStats(mockStats);
+        }
+      } else {
+        // Fallback to mock data
         setStats(mockStats);
-        setLoading(false);
-      }, 1000);
+      }
     } catch (error) {
       toast.error("Failed to load dashboard statistics");
       console.error("Error fetching dashboard stats:", error);
+      // Fallback to mock data
+      setStats(mockStats);
+    } finally {
       setLoading(false);
     }
   };
@@ -191,7 +203,7 @@ const AdminDashboard = () => {
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Bars dataKey="count" fill="#8884d8" />
+                      <Bar dataKey="count" fill="#8884d8" />
                     </BarChart>
                   </ResponsiveContainer>
                 </TabsContent>

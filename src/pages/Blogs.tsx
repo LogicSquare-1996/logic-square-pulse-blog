@@ -8,32 +8,55 @@ import {
   Filter, 
   TrendingUp, 
   Clock, 
-  Star
+  Star,
+  Tag
 } from "lucide-react";
 import BlogGrid from "@/components/blog/BlogGrid";
-import * as blogApi from "@/api/blog";
 import { BlogPost } from "@/components/blog/BlogCard";
+import api from "@/api/api";
+import { mockBlogs } from "@/utils/mockData";
+import { useAuth } from "@/context/AuthContext";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+// Mock data for filters
+const mockTags = [
+  "React", "JavaScript", "TypeScript", "Node.js", "MongoDB", 
+  "Express", "AWS", "DevOps", "Testing", "UI/UX"
+];
+
+const mockCategories = [
+  "Frontend", "Backend", "Full Stack", "DevOps", "Design",
+  "Mobile", "Data Science", "Machine Learning", "Security", "Career"
+];
 
 const Blogs = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const { isAuthenticated } = useAuth();
+  const [blogs, setBlogs] = useState<BlogPost[]>(mockBlogs);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("recent");
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
-    total: 0,
-    pages: 0
+    total: mockBlogs.length,
+    pages: Math.ceil(mockBlogs.length / 12)
   });
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    setIsAuthenticated(loggedIn);
-    
     fetchBlogs();
-  }, [pagination.page, activeFilter]);
+  }, [pagination.page, activeFilter, selectedTags, selectedCategories]);
 
   // Debounce search
   useEffect(() => {
@@ -47,17 +70,101 @@ const Blogs = () => {
   const fetchBlogs = async () => {
     setLoading(true);
     try {
-      const response = await blogApi.getBlogs({
-        page: pagination.page,
-        limit: pagination.limit,
-        sort: getSortParam(),
-        search: searchTerm
-      });
+      // Try to fetch from API first
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const params = {
+            page: pagination.page,
+            limit: pagination.limit,
+            sortBy: getSortParam(),
+            searchQuery: searchTerm,
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
+            categories: selectedCategories.length > 0 ? selectedCategories : undefined
+          };
+          
+          const response = await api.blog.getBlogs(params);
+          
+          if (response.data && response.data.success) {
+            setBlogs(response.data.blogs);
+            setPagination(response.data.pagination);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error fetching blogs from API:', error);
+          // Fall back to mock data
+        }
+      }
       
-      setBlogs(response.blogs);
-      setPagination(response.pagination);
+      // Fall back to filtering mock data
+      let filtered = [...mockBlogs];
+      
+      // Apply search filter
+      if (searchTerm) {
+        filtered = filtered.filter(blog => 
+          blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          blog.author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          blog.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+      }
+      
+      // Apply tag filter
+      if (selectedTags.length > 0) {
+        filtered = filtered.filter(blog => 
+          selectedTags.some(tag => blog.tags.includes(tag))
+        );
+      }
+      
+      // Apply category filter (mock data doesn't have categories, but would work with actual data)
+      if (selectedCategories.length > 0) {
+        filtered = filtered.filter(blog => 
+          blog.category && selectedCategories.includes(blog.category)
+        );
+      }
+      
+      // Apply sort
+      switch (activeFilter) {
+        case "popular":
+          filtered = [...filtered].sort((a, b) => b.likes - a.likes);
+          break;
+        case "recent":
+          filtered = [...filtered].sort((a, b) => {
+            const dateA = new Date(a.createdAt).getTime();
+            const dateB = new Date(b.createdAt).getTime();
+            return dateB - dateA;
+          });
+          break;
+        case "trending":
+          filtered = [...filtered].sort((a, b) => b.comments - a.comments);
+          break;
+        case "rated":
+          filtered = [...filtered].sort((a, b) => b.rating - a.rating);
+          break;
+        default:
+          filtered = [...filtered].sort((a, b) => {
+            const dateA = new Date(a.createdAt).getTime();
+            const dateB = new Date(b.createdAt).getTime();
+            return dateB - dateA;
+          });
+      }
+      
+      // Apply pagination
+      const start = (pagination.page - 1) * pagination.limit;
+      const end = start + pagination.limit;
+      const paginatedBlogs = filtered.slice(start, end);
+      
+      setBlogs(paginatedBlogs);
+      setPagination(prev => ({ 
+        ...prev, 
+        total: filtered.length,
+        pages: Math.ceil(filtered.length / pagination.limit)
+      }));
+      
     } catch (error) {
       console.error("Error fetching blogs:", error);
+      toast.error("Failed to load blogs");
     } finally {
       setLoading(false);
     }
@@ -66,15 +173,15 @@ const Blogs = () => {
   const getSortParam = () => {
     switch(activeFilter) {
       case "popular":
-        return "-likes.length";
+        return "likes";
       case "recent":
-        return "-createdAt";
+        return "createdAt";
       case "trending":
-        return "-comments.length";
+        return "comments";
       case "rated":
-        return "-rating";
+        return "rating";
       default:
-        return "-createdAt";
+        return "createdAt";
     }
   };
 
@@ -85,6 +192,31 @@ const Blogs = () => {
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const toggleTagSelection = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter(t => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+  
+  const toggleCategorySelection = (category: string) => {
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(selectedCategories.filter(c => c !== category));
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setActiveFilter("recent");
+    setSelectedTags([]);
+    setSelectedCategories([]);
+    setPagination(prev => ({ ...prev, page: 1 }));
+    setFilterDialogOpen(false);
   };
 
   return (
@@ -132,11 +264,79 @@ const Blogs = () => {
           >
             <TrendingUp className="mr-2 h-4 w-4" /> Trending
           </Button>
-          <Button
-            variant="outline"
-          >
-            <Filter className="mr-2 h-4 w-4" /> More Filters
-          </Button>
+          
+          <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" /> 
+                {(selectedTags.length > 0 || selectedCategories.length > 0) ? 
+                  `Filters (${selectedTags.length + selectedCategories.length})` : 
+                  "More Filters"}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Filter Blogs</DialogTitle>
+              </DialogHeader>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+                {/* Tags */}
+                <div>
+                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                    <Tag size={18} /> Tags
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {mockTags.map(tag => (
+                      <div key={tag} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`tag-${tag}`}
+                          checked={selectedTags.includes(tag)}
+                          onCheckedChange={() => toggleTagSelection(tag)}
+                        />
+                        <Label 
+                          htmlFor={`tag-${tag}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {tag}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Categories */}
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Categories</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {mockCategories.map(category => (
+                      <div key={category} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`category-${category}`}
+                          checked={selectedCategories.includes(category)}
+                          onCheckedChange={() => toggleCategorySelection(category)}
+                        />
+                        <Label 
+                          htmlFor={`category-${category}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {category}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-between mt-4">
+                <Button variant="outline" onClick={resetFilters}>
+                  Reset Filters
+                </Button>
+                <Button onClick={() => setFilterDialogOpen(false)} className="bg-blog-purple">
+                  Apply Filters
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       
@@ -176,16 +376,51 @@ const Blogs = () => {
                       Previous
                     </Button>
                     
-                    {[...Array(pagination.pages)].map((_, i) => (
-                      <Button 
-                        key={i}
-                        variant={pagination.page === i + 1 ? "default" : "outline"}
-                        className={pagination.page === i + 1 ? "bg-blog-purple" : ""}
-                        onClick={() => handlePageChange(i + 1)}
-                      >
-                        {i + 1}
-                      </Button>
-                    ))}
+                    {pagination.pages <= 5 ? (
+                      // Show all page numbers if 5 or less
+                      [...Array(pagination.pages)].map((_, i) => (
+                        <Button 
+                          key={i}
+                          variant={pagination.page === i + 1 ? "default" : "outline"}
+                          className={pagination.page === i + 1 ? "bg-blog-purple" : ""}
+                          onClick={() => handlePageChange(i + 1)}
+                        >
+                          {i + 1}
+                        </Button>
+                      ))
+                    ) : (
+                      // Show limited page numbers with ellipsis for larger sets
+                      <>
+                        <Button 
+                          variant={pagination.page === 1 ? "default" : "outline"}
+                          className={pagination.page === 1 ? "bg-blog-purple" : ""}
+                          onClick={() => handlePageChange(1)}
+                        >
+                          1
+                        </Button>
+                        
+                        {pagination.page > 3 && <span className="px-2 flex items-center">...</span>}
+                        
+                        {pagination.page !== 1 && pagination.page !== pagination.pages && (
+                          <Button 
+                            variant="default"
+                            className="bg-blog-purple"
+                          >
+                            {pagination.page}
+                          </Button>
+                        )}
+                        
+                        {pagination.page < pagination.pages - 2 && <span className="px-2 flex items-center">...</span>}
+                        
+                        <Button 
+                          variant={pagination.page === pagination.pages ? "default" : "outline"}
+                          className={pagination.page === pagination.pages ? "bg-blog-purple" : ""}
+                          onClick={() => handlePageChange(pagination.pages)}
+                        >
+                          {pagination.pages}
+                        </Button>
+                      </>
+                    )}
                     
                     <Button 
                       variant="outline"
@@ -206,11 +441,7 @@ const Blogs = () => {
                   </p>
                   <Button 
                     variant="outline" 
-                    onClick={() => {
-                      setSearchTerm("");
-                      setActiveFilter("recent");
-                      setPagination(prev => ({ ...prev, page: 1 }));
-                    }}
+                    onClick={resetFilters}
                   >
                     Reset filters
                   </Button>
@@ -222,19 +453,28 @@ const Blogs = () => {
         
         <TabsContent value="featured">
           <div className="text-center py-16">
-            <h3 className="text-xl font-medium mb-2">Featured blogs coming soon</h3>
+            <h3 className="text-xl font-medium mb-2">Featured blogs</h3>
             <p className="text-gray-500 dark:text-gray-400">
-              Our editors are curating the best content for you
+              Our editors have curated the best content for you
             </p>
+            <BlogGrid 
+              blogs={blogs.filter(blog => blog.featured)} 
+              isAuthenticated={isAuthenticated} 
+            />
           </div>
         </TabsContent>
         
         <TabsContent value="latest">
-          <div className="text-center py-16">
-            <h3 className="text-xl font-medium mb-2">Latest blogs</h3>
-            <p className="text-gray-500 dark:text-gray-400">
-              Stay updated with the newest content
-            </p>
+          <div className="py-8">
+            <h3 className="text-xl font-medium mb-6">Latest blogs</h3>
+            <BlogGrid 
+              blogs={[...blogs].sort((a, b) => {
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return dateB - dateA;
+              }).slice(0, 6)} 
+              isAuthenticated={isAuthenticated} 
+            />
           </div>
         </TabsContent>
       </Tabs>

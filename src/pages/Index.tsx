@@ -43,9 +43,12 @@ const Index = () => {
         filtered = [...filtered].sort((a, b) => b.likes - a.likes);
         break;
       case "recent":
-        filtered = [...filtered].sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        filtered = [...filtered].sort((a, b) => {
+          // Convert string dates to Date objects for comparison
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
         break;
       case "trending":
         filtered = [...filtered].sort((a, b) => b.comments - a.comments);

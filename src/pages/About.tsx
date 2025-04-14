@@ -1,135 +1,162 @@
 
-import { Card, CardContent } from "@/components/ui/card";
+import React from 'react';
+import { motion } from "framer-motion";
+import { Building, MapPin, AtSign, Phone, Clock, Check } from "lucide-react";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5
+    }
+  }
+};
 
 const About = () => {
   return (
-    <div className="container mx-auto py-16 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">About LogicSquare Blog Portal</h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">
-            A platform for sharing knowledge and insights among LogicSquare team members
+    <div className="container mx-auto py-20 px-4">
+      <motion.div 
+        className="max-w-4xl mx-auto"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <motion.div variants={itemVariants} className="mb-12 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">About Logic Square Blog</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            A platform to share knowledge, ideas, and technical insights within Logic Square
           </p>
-        </div>
+        </motion.div>
         
-        <div className="space-y-8">
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold mb-4">Our Mission</h2>
-              <p className="text-gray-700 dark:text-gray-300">
-                LogicSquare Blog Portal aims to create a collaborative environment where team members can share technical insights, industry trends, 
-                project experiences, and knowledge across domains. This platform fosters a culture of continuous learning and knowledge exchange 
-                among our talented professionals.
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">Our Mission</h2>
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
+            Our mission is to create a collaborative knowledge sharing platform where Logic Square employees can document, share, and learn from each other's experiences and insights.
+          </p>
+          <p className="text-gray-700 dark:text-gray-300">
+            This blog platform enables our team to build a rich knowledge base, foster innovation, and create a community of continuous learning and improvement.
+          </p>
+        </motion.div>
+        
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6">Key Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center mb-4">
+                <div className="h-10 w-10 rounded-full bg-blog-purple/20 flex items-center justify-center mr-3">
+                  <Check className="h-5 w-5 text-blog-purple" />
+                </div>
+                <h3 className="text-xl font-semibold">Rich Content Creation</h3>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400">
+                Advanced markdown editor with syntax highlighting, media embedding, and code snippets.
               </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold mb-4">Features</h2>
-              <ul className="list-disc pl-6 space-y-3 text-gray-700 dark:text-gray-300">
-                <li>Secure authentication with LogicSquare email domain</li>
-                <li>Rich Markdown editor for creating technical and non-technical blogs</li>
-                <li>Support for code snippets with syntax highlighting</li>
-                <li>Media uploads including images, videos, and document attachments</li>
-                <li>Interactive comment system with nested replies</li>
-                <li>Rating system to highlight valuable content</li>
-                <li>Bookmarking and history tracking for easy reference</li>
-                <li>Responsive design for all devices</li>
-              </ul>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold mb-4">Guidelines for Authors</h2>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
-                When creating content for the LogicSquare Blog Portal, please follow these guidelines:
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center mb-4">
+                <div className="h-10 w-10 rounded-full bg-blog-purple/20 flex items-center justify-center mr-3">
+                  <Check className="h-5 w-5 text-blog-purple" />
+                </div>
+                <h3 className="text-xl font-semibold">Collaboration</h3>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400">
+                Like, comment, and bookmark posts from colleagues to build on shared knowledge.
               </p>
-              
-              <ul className="list-disc pl-6 space-y-3 text-gray-700 dark:text-gray-300">
-                <li>Focus on original content that provides value to readers</li>
-                <li>Include practical examples when discussing technical concepts</li>
-                <li>Credit sources and references appropriately</li>
-                <li>Use appropriate tags to categorize your blog for better discoverability</li>
-                <li>Proofread your content for clarity and correctness</li>
-                <li>Be respectful and constructive when commenting on others' posts</li>
-                <li>Keep confidential company information secure</li>
-              </ul>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold mb-4">Contact Information</h2>
-              <p className="text-gray-700 dark:text-gray-300">
-                For any questions or support regarding the LogicSquare Blog Portal, please contact the admin team at:
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center mb-4">
+                <div className="h-10 w-10 rounded-full bg-blog-purple/20 flex items-center justify-center mr-3">
+                  <Check className="h-5 w-5 text-blog-purple" />
+                </div>
+                <h3 className="text-xl font-semibold">Categorization</h3>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400">
+                Organize content with tags, categories, and powerful search functionality.
               </p>
-              
-              <p className="mt-4 font-medium">
-                <a href="mailto:blogadmin@logic-square.com" className="text-blog-purple hover:underline">
-                  blogadmin@logic-square.com
-                </a>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center mb-4">
+                <div className="h-10 w-10 rounded-full bg-blog-purple/20 flex items-center justify-center mr-3">
+                  <Check className="h-5 w-5 text-blog-purple" />
+                </div>
+                <h3 className="text-xl font-semibold">Mobile Responsive</h3>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400">
+                Access the platform from any device with a seamless experience.
               </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold mb-4">Technology Stack</h2>
-              <p className="text-gray-700 dark:text-gray-300">
-                The LogicSquare Blog Portal is built using modern web technologies:
-              </p>
-              
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="font-semibold">Frontend</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">React, TypeScript</p>
+            </div>
+          </div>
+        </motion.div>
+        
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6">Contact Us</h2>
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <div className="flex items-center mb-4">
+                  <Building className="mr-3 text-blog-purple" />
+                  <span className="text-gray-700 dark:text-gray-300">Logic Square Technologies</span>
                 </div>
-                
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="font-semibold">Styling</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Tailwind CSS</p>
+                <div className="flex items-center mb-4">
+                  <MapPin className="mr-3 text-blog-purple" />
+                  <span className="text-gray-700 dark:text-gray-300">123 Tech Park, Innovation Road</span>
                 </div>
-                
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="font-semibold">Backend</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Node.js, Express</p>
+                <div className="flex items-center mb-4">
+                  <AtSign className="mr-3 text-blog-purple" />
+                  <span className="text-gray-700 dark:text-gray-300">contact@logic-square.com</span>
                 </div>
-                
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="font-semibold">Database</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">MongoDB</p>
+                <div className="flex items-center mb-4">
+                  <Phone className="mr-3 text-blog-purple" />
+                  <span className="text-gray-700 dark:text-gray-300">+1 234 567 8900</span>
                 </div>
-                
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="font-semibold">Storage</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">AWS S3</p>
-                </div>
-                
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="font-semibold">Authentication</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">JWT, OAuth</p>
-                </div>
-                
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="font-semibold">Editor</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Markdown</p>
-                </div>
-                
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="font-semibold">Deployment</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Vercel, Render</p>
+                <div className="flex items-center">
+                  <Clock className="mr-3 text-blog-purple" />
+                  <span className="text-gray-700 dark:text-gray-300">Mon-Fri: 9 AM - 6 PM</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+              <div>
+                <iframe 
+                  title="Logic Square Location"
+                  className="w-full h-[200px] rounded-lg border border-gray-200 dark:border-gray-700"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d424146.1026392048!2d150.65177769804143!3d-33.8473567145046!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6b129838f39a743f%3A0x3017d681632a850!2sSydney%20NSW%2C%20Australia!5e0!3m2!1sen!2sin!4v1650296246584!5m2!1sen!2sin"
+                  loading="lazy"
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </motion.div>
         
-        <div className="text-center mt-16">
-          <p className="text-gray-600 dark:text-gray-400">© {new Date().getFullYear()} LogicSquare Technologies</p>
-        </div>
-      </div>
+        <motion.div variants={itemVariants}>
+          <h2 className="text-2xl md:text-3xl font-bold mb-6">Join Our Community</h2>
+          <p className="text-gray-700 dark:text-gray-300 mb-6">
+            The Logic Square Blog platform is exclusively available for Logic Square employees. If you're part of our team, sign up using your @logic-square.com email address to start sharing your knowledge and insights.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/signup" className="bg-blog-purple hover:bg-blog-purple-dark text-white py-3 px-8 rounded-lg font-medium text-center">
+              Create an Account
+            </a>
+            <a href="/login" className="bg-transparent border border-blog-purple text-blog-purple hover:bg-blog-purple/10 py-3 px-8 rounded-lg font-medium text-center">
+              Sign In
+            </a>
+          </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };

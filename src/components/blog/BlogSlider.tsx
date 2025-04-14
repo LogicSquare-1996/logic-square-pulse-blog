@@ -1,9 +1,9 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, Clock, MessageSquare, Heart } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { BlogPost } from "./BlogCard";
 
 interface BlogSliderProps {
@@ -12,48 +12,74 @@ interface BlogSliderProps {
 }
 
 const BlogSlider = ({ blogs, isAuthenticated }: BlogSliderProps) => {
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const slideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
   
-  const handleNextSlide = () => {
-    setActiveSlide((prev) => (prev === blogs.length - 1 ? 0 : prev + 1));
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 1000 : -1000,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction: number) => ({
+      x: direction < 0 ? 1000 : -1000,
+      opacity: 0,
+    }),
   };
 
-  const handlePreviousSlide = () => {
-    setActiveSlide((prev) => (prev === 0 ? blogs.length - 1 : prev - 1));
-  };
+  const handleNext = useCallback(() => {
+    setDirection(1);
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % blogs.length);
+  }, [blogs.length]);
+
+  const handlePrev = useCallback(() => {
+    setDirection(-1);
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + blogs.length) % blogs.length);
+  }, [blogs.length]);
 
   useEffect(() => {
-    // Autoplay functionality
-    if (!isPaused) {
-      slideTimerRef.current = setInterval(() => {
-        handleNextSlide();
-      }, 5000);
-    }
+    // Auto-rotate carousel every 5 seconds
+    const interval = setInterval(() => {
+      handleNext();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [handleNext]);
 
-    return () => {
-      if (slideTimerRef.current) {
-        clearInterval(slideTimerRef.current);
-      }
-    };
-  }, [isPaused, activeSlide, blogs.length]);
-
+  // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
+    return new Intl.DateTimeFormat("en-US", {
       day: "numeric",
+      month: "short",
       year: "numeric",
-    });
+    }).format(date);
   };
 
-  const pauseSlider = () => {
-    setIsPaused(true);
-  };
-
-  const resumeSlider = () => {
-    setIsPaused(false);
+  // Render dots for pagination
+  const renderDots = () => {
+    return (
+      <div className="flex justify-center gap-2 mt-4">
+        {blogs.map((_, index) => (
+          <button
+            key={index}
+            className={`h-2 rounded-full transition-all ${
+              index === currentIndex 
+                ? "w-6 bg-blog-purple" 
+                : "w-2 bg-gray-300 dark:bg-gray-700"
+            }`}
+            onClick={() => {
+              setDirection(index > currentIndex ? 1 : -1);
+              setCurrentIndex(index);
+            }}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    );
   };
 
   if (!blogs || blogs.length === 0) {
@@ -61,167 +87,170 @@ const BlogSlider = ({ blogs, isAuthenticated }: BlogSliderProps) => {
   }
 
   return (
-    <div 
-      className="relative w-full h-[500px] overflow-hidden bg-gradient-to-r from-gray-900 to-gray-800"
-      onMouseEnter={pauseSlider}
-      onMouseLeave={resumeSlider}
-    >
-      {/* Background Image Layer */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`bg-${activeSlide}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.3 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1, ease: "easeInOut" }}
-          className="absolute inset-0 z-0"
-        >
-          <div 
-            className="w-full h-full"
-            style={{
-              backgroundImage: `url(${blogs[activeSlide].thumbnailUrl || '/placeholder.svg'})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              filter: "blur(15px)",
+    <div className="relative">
+      <div className="h-[560px] md:h-[640px] overflow-hidden relative">
+        {/* Background gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background z-10" />
+        
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.div
+            key={currentIndex}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: "spring", stiffness: 300, damping: 30 },
+              opacity: { duration: 0.2 }
             }}
-          />
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
-
-      <div className="container mx-auto h-full relative z-20 flex items-center">
-        <div className="w-full">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeSlide}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
-            >
-              {/* Left Content (Text) */}
-              <div className="text-white p-4">
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {blogs[activeSlide].tags?.slice(0, 3).map((tag, index) => (
-                    <span
-                      key={index}
-                      className="bg-blog-purple/20 text-blog-purple-light px-2 py-1 text-xs rounded"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <motion.h1 
-                  className="text-3xl md:text-5xl font-bold mb-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                  {blogs[activeSlide].title}
-                </motion.h1>
-                
-                <motion.p 
-                  className="text-gray-300 mb-6 max-w-lg"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  {blogs[activeSlide].excerpt}
-                </motion.p>
-
-                <motion.div 
-                  className="flex items-center space-x-4 mb-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                >
-                  <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-400">
-                    {blogs[activeSlide].author.profilePicture ? (
-                      <img
-                        src={blogs[activeSlide].author.profilePicture}
-                        alt={blogs[activeSlide].author.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center text-gray-800">
-                        {blogs[activeSlide].author.name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">{blogs[activeSlide].author.name}</p>
-                    <p className="text-sm text-gray-400">{formatDate(blogs[activeSlide].createdAt)}</p>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
-                >
-                  <Link to={`/blog/${blogs[activeSlide]._id || blogs[activeSlide].id}`}>
-                    <Button className="bg-blog-purple hover:bg-blog-purple-dark text-white">
-                      Read Post
-                    </Button>
-                  </Link>
-                </motion.div>
+            className="absolute top-0 left-0 w-full h-full"
+          >
+            <div className="relative w-full h-full">
+              {/* Background image with filter */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div
+                  className="w-full h-full transform scale-110 blur-sm"
+                  style={{
+                    backgroundImage: `url(${blogs[currentIndex].thumbnailUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/50" />
               </div>
               
-              {/* Right Content (Image) */}
-              <div className="hidden md:block">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.7, ease: "easeOut" }}
-                  className="relative rounded-lg shadow-2xl overflow-hidden h-[350px]"
-                >
-                  <img
-                    src={blogs[activeSlide].thumbnailUrl || '/placeholder.svg'}
-                    alt={blogs[activeSlide].title}
-                    className="w-full h-full object-cover"
-                  />
-                </motion.div>
+              {/* Content */}
+              <div className="relative z-20 container mx-auto px-4 h-full flex flex-col justify-center">
+                <div className="max-w-3xl mt-24">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                  >
+                    <p className="text-white/80 mb-2 flex items-center text-sm">
+                      <Clock size={14} className="mr-1" />
+                      {formatDate(blogs[currentIndex].createdAt)}
+                      <span className="mx-2">•</span>
+                      {blogs[currentIndex].category}
+                    </p>
+                  </motion.div>
+                  
+                  <motion.h1 
+                    className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                  >
+                    {blogs[currentIndex].title}
+                  </motion.h1>
+                  
+                  <motion.p 
+                    className="text-lg text-white/90 mb-6 max-w-xl"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                  >
+                    {blogs[currentIndex].excerpt}
+                  </motion.p>
+                  
+                  <motion.div
+                    className="flex items-center mb-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.5 }}
+                  >
+                    <img
+                      src={blogs[currentIndex].author.avatar}
+                      alt={blogs[currentIndex].author.name}
+                      className="h-10 w-10 rounded-full object-cover mr-3"
+                    />
+                    <div>
+                      <span className="block text-white font-medium">
+                        {blogs[currentIndex].author.name}
+                      </span>
+                      <span className="text-white/80 text-sm">
+                        {blogs[currentIndex].author.title}
+                      </span>
+                    </div>
+                    <div className="flex ml-auto gap-4">
+                      <span className="flex items-center text-white/80">
+                        <Heart size={16} className="mr-1" />
+                        {blogs[currentIndex].likes}
+                      </span>
+                      <span className="flex items-center text-white/80">
+                        <MessageSquare size={16} className="mr-1" />
+                        {blogs[currentIndex].comments}
+                      </span>
+                    </div>
+                  </motion.div>
+                  
+                  <motion.div
+                    className="flex flex-wrap gap-2 mb-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                  >
+                    {blogs[currentIndex].tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="bg-white/10 text-white px-3 py-1 rounded-full text-sm"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7, duration: 0.5 }}
+                  >
+                    <Link to={`/blog/${blogs[currentIndex].id}`}>
+                      <Button className="bg-blog-purple hover:bg-blog-purple-dark text-white">
+                        Read Article
+                      </Button>
+                    </Link>
+                    
+                    {isAuthenticated && (
+                      <Button variant="outline" className="ml-3 text-white border-white hover:bg-white/10">
+                        Bookmark
+                      </Button>
+                    )}
+                  </motion.div>
+                </div>
               </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Slider Navigation Buttons */}
-          <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 md:justify-start md:left-8 z-30">
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="bg-white/10 backdrop-blur-sm border-white/20 text-white rounded-full hover:bg-white/20"
-              onClick={handlePreviousSlide}
-            >
-              <ChevronLeft />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="bg-white/10 backdrop-blur-sm border-white/20 text-white rounded-full hover:bg-white/20"
-              onClick={handleNextSlide}
-            >
-              <ChevronRight />
-            </Button>
-          </div>
-
-          {/* Indicator Dots */}
-          <div className="absolute bottom-8 right-8 hidden md:flex space-x-2">
-            {blogs.map((_, index) => (
-              <button
-                key={index}
-                className={`h-2 rounded-full transition-all ${
-                  index === activeSlide ? "w-8 bg-blog-purple" : "w-2 bg-white/30"
-                }`}
-                onClick={() => setActiveSlide(index)}
-              />
-            ))}
-          </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+        
+        {/* Navigation buttons */}
+        <div className="absolute z-30 flex justify-between w-full top-1/2 transform -translate-y-1/2 px-4">
+          <Button
+            onClick={handlePrev}
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-white/10 border-white/20 text-white hover:bg-white/20"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          
+          <Button
+            onClick={handleNext}
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-white/10 border-white/20 text-white hover:bg-white/20"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
         </div>
+      </div>
+      
+      {/* Dots indicator */}
+      <div className="container mx-auto px-4 relative -mt-6 z-20">
+        {renderDots()}
       </div>
     </div>
   );
